@@ -31,23 +31,32 @@ class MainActivity : ComponentActivity() {
     private lateinit var webSocketClient: ChatWebSocketClient
 
     val messageList = mutableStateListOf<String>()
+    var isConnected by mutableStateOf(false)
+
+    suspend fun connectSocket(ip: String) {
+        val serverUri = URI("ws://$ip:6868/chat")
+        webSocketClient = ChatWebSocketClient(serverUri, onSocketClose = {
+            isConnected = false
+        }, messageListener = { message ->
+            messageList.add(message)
+        })
+        webSocketClient.connect()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val serverUri = URI("ws://10.1.141.187:6868/chat")
-        webSocketClient = ChatWebSocketClient(serverUri) { message ->
-            messageList.add(message)
-        }
+
         // connect to websocket server
         setContent {
             SocketClientTheme {
-                LaunchedEffect(key1 = Unit) {
-                    webSocketClient.connect()
-                }
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     var text by remember {
                         mutableStateOf("")
                     }
+                    var ip by remember {
+                        mutableStateOf("")
+                    }
+
                     Box {
                         LazyColumn {
                             items(messageList) {
@@ -55,14 +64,38 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
+
                         Row(
                             Modifier
                                 .fillMaxWidth()
                                 .align(Alignment.BottomCenter)
                         ) {
-                            TextField(value = text, onValueChange = { text = it })
-                            Button(onClick = { webSocketClient.sendMessage(text) }) {
-                                Text(text = "Send Message")
+                            if (isConnected) {
+                                TextField(
+                                    modifier = Modifier.weight(1f),
+                                    value = text,
+                                    onValueChange = { text = it },
+                                    placeholder = { Text(text = " Type message") }
+                                )
+                                Button(onClick = { webSocketClient.sendMessage(text) }) {
+                                    Text(text = "Send")
+                                }
+                            } else {
+                                val scope = rememberCoroutineScope()
+                                TextField(
+                                    modifier = Modifier.weight(1f),
+                                    value = ip,
+                                    onValueChange = { ip = it },
+                                    placeholder = { Text(text = " Type server ip") }
+                                )
+                                Button(onClick = {
+                                    scope.launch {
+                                        connectSocket(ip)
+                                        isConnected = true
+                                    }
+                                }) {
+                                    Text(text = "connect")
+                                }
                             }
                         }
                     }
