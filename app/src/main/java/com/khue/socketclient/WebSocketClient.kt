@@ -3,7 +3,9 @@ package com.khue.socketclient
 import android.content.Context
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
+import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.websocket.WebSockets
+import io.ktor.client.plugins.websocket.webSocketSession
 import io.ktor.client.plugins.websocket.wss
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
@@ -14,6 +16,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
+import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
@@ -42,13 +45,14 @@ val crt = "-----BEGIN CERTIFICATE-----\n" +
         "dF0faRatl0DlAITKv0NMjVe5/QRKnZXLB8MpLmU=\n" +
         "-----END CERTIFICATE-----"
 
-class WebSocketClient(private val url: String, private val context: Context) {
+class WebSocketClient(private val url: String) {
 
     fun getKeyStore(): KeyStore {
-        val keyStoreFile = FileInputStream(File(context.filesDir, "keystore.jks"))
-        val keyStorePassword = "123456".toCharArray()
-        val keyStore: KeyStore = KeyStore.getInstance(KeyStore.getDefaultType())
-        keyStore.load(keyStoreFile, keyStorePassword)
+        val certificateFactory = CertificateFactory.getInstance("X509")
+        val epaperCA = certificateFactory.generateCertificate(ByteArrayInputStream(crt.toByteArray()))
+        val keyStore = KeyStore.getInstance(KeyStore.getDefaultType())
+        keyStore.load(null, null)
+        keyStore.setCertificateEntry("khue", epaperCA)
         return keyStore
     }
 
@@ -68,11 +72,14 @@ class WebSocketClient(private val url: String, private val context: Context) {
         return sslContext
     }
 
-    private val client = HttpClient(CIO) {
+    private val client = HttpClient(OkHttp) {
         install(WebSockets)
         engine {
-            https {
-                trustManager = getTrustManager()
+            config {
+                sslSocketFactory(getSslContext()!!.socketFactory, getTrustManager())
+                hostnameVerifier { _, _ ->
+                    true
+                }
             }
         }
     }

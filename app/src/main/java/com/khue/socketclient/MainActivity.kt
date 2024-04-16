@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity(), WebSocketListener {
     private val webSocketClient by lazy {
-        WebSocketClient("wss://10.1.140.124:8443/chat", this)
+        WebSocketClient("wss://192.168.1.4:8002/chat")
     }
 
     val messageList = mutableStateListOf<String>()
@@ -95,12 +95,18 @@ class MainActivity : ComponentActivity(), WebSocketListener {
         }
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        webSocketClient.disconnect()
+    }
+
     override fun onConnected() {
 
     }
 
     override fun onMessage(message: String) {
         Log.d("ChatWebSocketClient", message)
+        messageList.add(message)
     }
 
     override fun onDisconnected() {
