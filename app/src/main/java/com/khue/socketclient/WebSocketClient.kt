@@ -9,9 +9,11 @@ import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileInputStream
 import java.security.KeyStore
+import java.security.cert.CertificateFactory
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager

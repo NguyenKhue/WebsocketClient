@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity(), WebSocketListener {
     private val webSocketClient by lazy {
-        WebSocketClient("wss://10.1.140.124:6868/chat", this)
+        WebSocketClient("wss://10.1.140.124:8443/chat", this)
     }
 
     val messageList = mutableStateListOf<String>()
