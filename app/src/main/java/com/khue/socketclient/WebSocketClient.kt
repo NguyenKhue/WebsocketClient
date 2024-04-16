@@ -1,22 +1,27 @@
 package com.khue.socketclient
 
-import android.content.Context
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.plugins.websocket.webSocketSession
 import io.ktor.client.plugins.websocket.wss
+import io.ktor.client.request.url
+import io.ktor.http.URLProtocol
+import io.ktor.http.takeFrom
 import io.ktor.websocket.Frame
+import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.readText
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.ByteArrayInputStream
-import java.io.File
-import java.io.FileInputStream
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
-import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
@@ -45,7 +50,9 @@ val crt = "-----BEGIN CERTIFICATE-----\n" +
         "dF0faRatl0DlAITKv0NMjVe5/QRKnZXLB8MpLmU=\n" +
         "-----END CERTIFICATE-----"
 
-class WebSocketClient(private val url: String) {
+class WebSocketClient(private val urlString: String) {
+
+    private var socket: WebSocketSession? = null
 
     fun getKeyStore(): KeyStore {
         val certificateFactory = CertificateFactory.getInstance("X509")
@@ -86,7 +93,7 @@ class WebSocketClient(private val url: String) {
 
     fun connect(listener: WebSocketListener) {
         GlobalScope.launch {
-            client.wss(url) {
+            client.wss(urlString) {
                 listener.onConnected()
 
                 try {
@@ -99,6 +106,43 @@ class WebSocketClient(private val url: String) {
                     listener.onDisconnected()
                 }
             }
+        }
+    }
+    fun sendMessage(message: String) {
+        GlobalScope.launch {
+            try {
+                socket?.send(Frame.Text(message))
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun observeMessages(): Flow<String> {
+        return try {
+            socket?.incoming
+                ?.receiveAsFlow()
+                ?.filter { it is Frame.Text }
+                ?.map {
+                    (it as? Frame.Text)?.readText() ?: ""
+                } ?: flow {  }
+        } catch(e: Exception) {
+            e.printStackTrace()
+            flow {  }
+        }
+    }
+
+    suspend fun initSession(): Boolean {
+        return try {
+            socket = client.webSocketSession {
+                url(urlString)
+            }
+            if(socket?.isActive == true) {
+                true
+            } else false
+        } catch(e: Exception) {
+            e.printStackTrace()
+            false
         }
     }
 

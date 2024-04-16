@@ -15,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -40,6 +41,13 @@ class MainActivity : ComponentActivity(), WebSocketListener {
         // connect to websocket server
         setContent {
             SocketClientTheme {
+                LaunchedEffect(key1 = isConnected) {
+                    if (isConnected) {
+                        webSocketClient.observeMessages().collect {
+                            messageList.add(it)
+                        }
+                    }
+                }
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     var text by remember {
                         mutableStateOf("")
@@ -68,7 +76,7 @@ class MainActivity : ComponentActivity(), WebSocketListener {
                                     onValueChange = { text = it },
                                     placeholder = { Text(text = " Type message") }
                                 )
-                                Button(onClick = {}) {
+                                Button(onClick = {webSocketClient.sendMessage(text)}) {
                                     Text(text = "Send")
                                 }
                             } else {
@@ -81,8 +89,10 @@ class MainActivity : ComponentActivity(), WebSocketListener {
                                 )
                                 Button(onClick = {
                                     scope.launch {
-                                        webSocketClient.connect(this@MainActivity)
-                                        isConnected = true
+                                        webSocketClient.initSession().also {
+                                            Log.d("ChatWebSocketClient", "Connected: $it")
+                                            isConnected = it
+                                        }
                                     }
                                 }) {
                                     Text(text = "connect")
