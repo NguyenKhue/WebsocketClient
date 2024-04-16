@@ -47,8 +47,12 @@ android {
 }
 
 dependencies {
-
-    implementation(libs.java.webSocket)
+    //implementation(libs.ktor.client.android)
+    implementation(libs.ktor.client.cio)
+    //implementation(libs.ktor.client.java)
+    //implementation(libs.ktor.client.okhttp)
+    implementation(libs.ktor.client.websockets)
+    //implementation(libs.java.webSocket)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

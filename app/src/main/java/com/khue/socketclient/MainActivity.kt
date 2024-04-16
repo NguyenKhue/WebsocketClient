@@ -1,6 +1,7 @@
 package com.khue.socketclient
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
@@ -14,7 +15,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -25,23 +25,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.khue.socketclient.ui.theme.SocketClientTheme
 import kotlinx.coroutines.launch
-import java.net.URI
 
-class MainActivity : ComponentActivity() {
-    private lateinit var webSocketClient: ChatWebSocketClient
+class MainActivity : ComponentActivity(), WebSocketListener {
+    private val webSocketClient by lazy {
+        WebSocketClient("wss://10.1.140.124:6868/chat", this)
+    }
 
     val messageList = mutableStateListOf<String>()
     var isConnected by mutableStateOf(false)
-
-    suspend fun connectSocket(ip: String) {
-        val serverUri = URI("ws://$ip:6868/chat")
-        webSocketClient = ChatWebSocketClient(serverUri, onSocketClose = {
-            isConnected = false
-        }, messageListener = { message ->
-            messageList.add(message)
-        })
-        webSocketClient.connect()
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,7 +68,7 @@ class MainActivity : ComponentActivity() {
                                     onValueChange = { text = it },
                                     placeholder = { Text(text = " Type message") }
                                 )
-                                Button(onClick = { webSocketClient.sendMessage(text) }) {
+                                Button(onClick = {}) {
                                     Text(text = "Send")
                                 }
                             } else {
@@ -90,7 +81,7 @@ class MainActivity : ComponentActivity() {
                                 )
                                 Button(onClick = {
                                     scope.launch {
-                                        connectSocket(ip)
+                                        webSocketClient.connect(this@MainActivity)
                                         isConnected = true
                                     }
                                 }) {
@@ -104,9 +95,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        // close websocket connection
-        webSocketClient.close()
+    override fun onConnected() {
+
+    }
+
+    override fun onMessage(message: String) {
+        Log.d("ChatWebSocketClient", message)
+    }
+
+    override fun onDisconnected() {
+
     }
 }
