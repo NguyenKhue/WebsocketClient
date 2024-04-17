@@ -1,5 +1,6 @@
 package com.khue.socketclient
 
+import android.util.Log
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.websocket.WebSockets
@@ -16,6 +17,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -137,9 +140,7 @@ class WebSocketClient(private val urlString: String) {
             socket = client.webSocketSession {
                 url(urlString)
             }
-            if(socket?.isActive == true) {
-                true
-            } else false
+            socket?.isActive == true
         } catch(e: Exception) {
             e.printStackTrace()
             false

@@ -25,11 +25,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.khue.socketclient.ui.theme.SocketClientTheme
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity(), WebSocketListener {
     private val webSocketClient by lazy {
-        WebSocketClient("wss://192.168.1.4:8002/chat")
+        WebSocketClient("wss://10.1.141.187:8002/chat")
     }
 
     val messageList = mutableStateListOf<String>()
@@ -43,7 +44,11 @@ class MainActivity : ComponentActivity(), WebSocketListener {
             SocketClientTheme {
                 LaunchedEffect(key1 = isConnected) {
                     if (isConnected) {
-                        webSocketClient.observeMessages().collect {
+                        webSocketClient.observeMessages()
+                            .onCompletion {
+                                isConnected = false
+                            }
+                            .collect {
                             messageList.add(it)
                         }
                     }
