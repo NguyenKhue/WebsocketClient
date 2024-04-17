@@ -14,7 +14,7 @@ class ChatWebSocketClient(serverUri: URI, private val messageListener: (String) 
 
     override fun onClose(code: Int, reason: String?, remote: Boolean) {
         // When WebSocket connection closed
-        Log.d("ChatWebSocketClient", "onClose")
+        Log.d("ChatWebSocketClient", "onClose: $reason, $code, $remote")
         onSocketClose()
     }
 
