@@ -45,10 +45,11 @@ val crt = "-----BEGIN CERTIFICATE-----\n" +
 class WebSocketClient(private val url: String, private val context: Context) {
 
     fun getKeyStore(): KeyStore {
-        val keyStoreFile = FileInputStream(File(context.filesDir, "keystore.jks"))
-        val keyStorePassword = "123456".toCharArray()
-        val keyStore: KeyStore = KeyStore.getInstance(KeyStore.getDefaultType())
-        keyStore.load(keyStoreFile, keyStorePassword)
+        val certificateFactory = CertificateFactory.getInstance("X509")
+        val epaperCA = certificateFactory.generateCertificate(ByteArrayInputStream(crt.toByteArray()))
+        val keyStore = KeyStore.getInstance(KeyStore.getDefaultType())
+        keyStore.load(null, null)
+        keyStore.setCertificateEntry("khue", epaperCA)
         return keyStore
     }
 
